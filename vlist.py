@@ -1,3 +1,4 @@
+from collections import defaultdict
 from urllib.request import urlopen
 import lxml.html
 
@@ -6,7 +7,16 @@ vita_urls = [
     'https://en.wikipedia.org/wiki/List_of_PlayStation_Vita_games_(M%E2%80%93Z)'
 ]
 
+phys_kw = {}
+phys_kw['na'] = ['US']
+phys_kw['fr'] = ['France']
+phys_kw['de'] = ['Germany']
+phys_kw['es'] = ['Spain']
+phys_kw['eu'] = phys_kw['fr'] + phys_kw['de'] + phys_kw['es'] + ['Europe', 'EU']
+phys_kw['jp'] = ['Japan', 'JP']
+
 games = []
+reg_games = defaultdict(list)
 
 for url in vita_urls:
 
@@ -41,25 +51,39 @@ for url in vita_urls:
         except IndexError:
             title = ititle.text
 
-        phys = e[-2].text
-        na = e[4].text
-        eu = e[5].text
-        jp = e[6].text
+        phys_data = e[-2].text
 
-        phys_na_kw = ['US']
-        phys_eu_kw = ['France', 'Germany', 'Spain', 'Europe', 'EU']
+        dates = {}
+        dates['na'] = e[4].text
+        dates['eu'] = e[5].text
+        dates['jp'] = e[6].text
 
-        is_phys_na = any(kw in phys for kw in phys_na_kw)
-        is_phys_eu = any(kw in phys for kw in phys_eu_kw)
+        is_phys_excl = {}
+        for reg in phys_kw:
+            is_phys_excl[reg] = any(kw in phys_data for kw in phys_kw[reg])
 
-        is_phys = (phys == 'Yes' or is_phys_na or is_phys_eu)
-        is_na = (na != 'Unreleased')
-        is_eu = (eu != 'Unreleased')
+        is_phys = {}
+        for reg in ('na', 'eu', 'jp'):
+            is_phys[reg] = ((phys_data == 'Yes' or is_phys_excl[reg])
+                            and dates[reg] not in ('Unreleased', 'TBA'))
 
-        #if is_phys and (is_na or is_eu):
-        if is_phys and is_eu:
+        for reg in phys_kw:
+            if is_phys_excl[reg]:
+                reg_games[reg].append(title)
+
+        if any(is_phys[reg] for reg in ('na', 'eu', 'jp')):
             games.append(title)
 
-with open('list.txt', 'w') as flist:
+# Output
+
+# All physicals
+with open('physcarts.txt', 'w') as flist:
     for g in games:
         print(g, file=flist)
+
+# Region-exclusive physicals (need SK, Asia)
+for reg in reg_games:
+    fname = 'phys_{}_excl.txt'.format(reg)
+    with open(fname, 'w') as flist:
+        for gname in reg_games[reg]:
+            print(gname, file=flist)
