@@ -1,9 +1,17 @@
-from lxml import etree
+from urllib.request import urlopen
+import lxml.html
+
+vita_urls = [
+    'https://en.wikipedia.org/wiki/List_of_PlayStation_Vita_games_(A%E2%80%93L)',
+    'https://en.wikipedia.org/wiki/List_of_PlayStation_Vita_games_(M%E2%80%93Z)'
+]
 
 games = []
 
-for fp in ('games_al.html', 'games_mz.html'):
-    tree = etree.parse(fp)
+for url in vita_urls:
+
+    res = urlopen(url)
+    tree = lxml.html.parse(res)
     root = tree.getroot()
     body = root.find("body")
 
@@ -26,6 +34,7 @@ for fp in ('games_al.html', 'games_mz.html'):
             assert(spans)
             ititle = spans[0][0]
 
+        # TODO: replace exception with explicit parsing
         try:
             title = ititle[0].text
             assert(ititle[0].tag == 'a')
@@ -47,7 +56,8 @@ for fp in ('games_al.html', 'games_mz.html'):
         is_na = (na != 'Unreleased')
         is_eu = (eu != 'Unreleased')
 
-        if is_phys and (is_na or is_eu):
+        #if is_phys and (is_na or is_eu):
+        if is_phys and is_eu:
             games.append(title)
 
 with open('list.txt', 'w') as flist:
