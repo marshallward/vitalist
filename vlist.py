@@ -19,6 +19,7 @@ phys_kw['jp'] = ['Japan', 'JP']
 
 games = []
 reg_games = defaultdict(list)
+reg_games_incl = defaultdict(list)
 
 for url in vita_urls:
 
@@ -37,12 +38,13 @@ for url in vita_urls:
     for e in entries:
         td = e[0]
 
-        if td[0].tag == 'i':
+        if td[0].tag in ('i', 'a'):
             ititle = td[0]
         elif td[0].tag == 'span' and td[1].tag == 'i':
             ititle = td[1]
         else:
             spans = [t for t in td if t.tag == 'span' and t.get('class') == 'sorttext']
+
             assert(spans)
             ititle = spans[0][0]
 
@@ -88,6 +90,10 @@ for url in vita_urls:
             if is_phys_excl[reg]:
                 reg_games[reg].append(title)
 
+        for reg in ('na', 'eu', 'jp'):
+            if is_phys[reg]:
+                reg_games_incl[reg].append(title)
+
         if any(is_phys[reg] for reg in ('na', 'eu', 'jp')):
             games.append(title)
 
@@ -103,4 +109,11 @@ for reg in ('na', 'eu', 'jp'):
     fname = 'phys_{}_excl.txt'.format(reg)
     with open(fname, 'w') as flist:
         for gname in reg_games[reg]:
+            print(gname, file=flist)
+
+# Physicals by region
+for reg in ('na', 'eu', 'jp'):
+    fname = 'phys_{}.txt'.format(reg)
+    with open(fname, 'w') as flist:
+        for gname in reg_games_incl[reg]:
             print(gname, file=flist)
